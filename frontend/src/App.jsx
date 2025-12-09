@@ -5,6 +5,12 @@ import { format, addDays, startOfToday, isSameDay } from 'date-fns';
 function App() {
   const [habits, setHabits] = useState([]);
   const [selectedDate, setSelectedDate] = useState(startOfToday());
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+
+  // Form state
+  const [newHabitName, setNewHabitName] = useState('');
+  const [newHabitIcon, setNewHabitIcon] = useState('fas fa-star');
+  const [newHabitColor, setNewHabitColor] = useState('blue-500');
 
   const fetchHabits = async () => {
     try {
@@ -27,16 +33,35 @@ function App() {
     }
   };
 
+  const createHabit = async (e) => {
+    e.preventDefault();
+    if (!newHabitName.trim()) return;
+    try {
+      await axios.post('http://localhost:5000/api/habits', {
+        name: newHabitName.trim(),
+        icon: newHabitIcon,
+        color: newHabitColor
+      });
+      setNewHabitName('');
+      setNewHabitIcon('fas fa-star');
+      setNewHabitColor('blue-500');
+      setIsCreateOpen(false);
+      fetchHabits();
+    } catch (err) {
+      console.error('Error creating habit', err);
+    }
+  };
+
   const dateStrip = Array.from({ length: 5 }, (_, i) => addDays(startOfToday(), i));
 
   return (
     <div className="flex flex-col h-screen bg-zinc-900 text-white overflow-hidden font-sans">
-      <div className="px-4 py-6 flex justify-between items-start">
+        <div className="px-4 py-6 flex justify-between items-start">
         <div>
           <h1 className="text-4xl font-bold uppercase">{format(selectedDate, 'EEEE')}</h1>
           <p className="text-gray-400 text-sm mt-1">{format(selectedDate, 'MMM d')}</p>
         </div>
-        <button onClick={() => alert('Add Habit Modal would open here!')} className="w-12 h-12 rounded-full bg-blue-500 text-white flex items-center justify-center hover:bg-blue-600 transition shadow-lg shadow-blue-500/30">
+        <button onClick={() => setIsCreateOpen(true)} className="w-12 h-12 rounded-full bg-blue-500 text-white flex items-center justify-center hover:bg-blue-600 transition shadow-lg shadow-blue-500/30">
           <i className="fas fa-plus text-lg"></i>
         </button>
       </div>
@@ -119,3 +144,37 @@ function NavIcon({ icon, label, active }) {
 }
 
 export default App;
+
+// Create Habit Modal Component
+function CreateHabitModal({ open, onClose, name, setName, icon, setIcon, color, setColor, onSubmit }) {
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/50">
+      <div className="w-full max-w-md bg-gray-900 rounded-2xl p-6">
+        <h3 className="text-lg font-semibold mb-4">Create Habit</h3>
+        <form onSubmit={onSubmit} className="space-y-3">
+          <div>
+            <label className="text-sm text-gray-300">Name</label>
+            <input value={name} onChange={(e) => setName(e.target.value)} className="w-full mt-1 px-3 py-2 rounded bg-gray-800 text-white border border-gray-700" placeholder="e.g. Read Book" />
+          </div>
+
+          <div>
+            <label className="text-sm text-gray-300">Icon (FontAwesome class)</label>
+            <input value={icon} onChange={(e) => setIcon(e.target.value)} className="w-full mt-1 px-3 py-2 rounded bg-gray-800 text-white border border-gray-700" placeholder="e.g. fas fa-book" />
+          </div>
+
+          <div>
+            <label className="text-sm text-gray-300">Color (Tailwind color token)</label>
+            <input value={color} onChange={(e) => setColor(e.target.value)} className="w-full mt-1 px-3 py-2 rounded bg-gray-800 text-white border border-gray-700" placeholder="e.g. blue-500" />
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2">
+            <button type="button" onClick={onClose} className="px-4 py-2 rounded bg-gray-700 text-sm">Cancel</button>
+            <button type="submit" className="px-4 py-2 rounded bg-blue-500 text-white text-sm">Create</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
